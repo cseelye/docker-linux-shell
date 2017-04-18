@@ -1,0 +1,59 @@
+#!/bin/bash
+set -eu
+
+DEFAULT_NIC="eth0"
+[[ $(uname) == "Darwin" ]] && DEFAULT_NIC="en0"
+
+# Additional options to the docker run command - https://docs.docker.com/engine/reference/commandline/run/
+LINUX_SHELL_RUN_OPTIONS=${LINUX_SHELL_RUN_OPTIONS:-}
+
+# The base docker image to use for shells
+LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-linux-shell}
+
+# The name to give to shell container instances
+LINUX_SHELL_CONTAINER_NAME="linux-shell"
+
+# The NIC on the host that the container can connect to (primarily for X11)
+LINUX_SHELL_HOST_INTERFACE=${LINUX_SHELL_HOST_INTERFACE:-${DEFAULT_NIC}}
+
+
+# If the user did not supply a command to run, start the container with an interactive shell
+if [[ $# -le 0 ]]; then
+    cmd="/bin/bash"
+
+# If the user specified a command, run that command in the container
+else
+    cmd="$*"
+fi
+
+HOST_IP=$(/sbin/ifconfig ${LINUX_SHELL_HOST_INTERFACE} | /usr//bin/grep inet | /usr/bin/awk '$1=="inet" {print $2}')
+eval HOMEDIR="~"
+HOSTNAME=$(hostname -s)
+
+index=$(/usr/local/bin/docker ps --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | cut -d- -f3 | sort | tail -n1)
+(( index++ )) || true
+
+# Start the container.  To make it as seamless as possible:
+#   Run in privileged mode so the user has max power
+#   Export DOCKER_HOST_USER, DOCKER_HOST_NAME and DOCKER_HOST_IP so that the container knows a little bit about its parent
+#   Mount the current user's home directory into the container so they get the same environment
+#   Mount the X11 socket and export DISPLAY so that GUI apps can run in the container
+
+exec /usr/local/bin/docker run \
+    --interactive \
+    --tty \
+    --privileged \
+    --rm \
+    --env DOCKER_HOST_NAME=${HOSTNAME} \
+    --env DOCKER_HOST_IP=${HOST_IP} \
+    --env DOCKER_HOST_USER=${USER} \
+    --env DISPLAY=${HOST_IP}:0 \
+    --volume ${HOMEDIR}:/root \
+    --volume /tmp/.X11-unix:/tmp/.X11-unix \
+    --workdir /root \
+    --hostname ${LINUX_SHELL_CONTAINER_NAME}-${index} \
+    --name ${LINUX_SHELL_CONTAINER_NAME}-${index} \
+    ${LINUX_SHELL_RUN_OPTIONS} \
+    ${LINUX_SHELL_IMAGE_NAME} \
+    ${cmd}
+

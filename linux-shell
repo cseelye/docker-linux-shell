@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 
 DEFAULT_NIC="eth0"
 [[ $(uname) == "Darwin" ]] && DEFAULT_NIC="en0"
@@ -11,11 +11,10 @@ LINUX_SHELL_RUN_OPTIONS=${LINUX_SHELL_RUN_OPTIONS:-}
 LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-linux-shell}
 
 # The name to give to shell container instances
-LINUX_SHELL_CONTAINER_NAME="linux-shell"
+LINUX_SHELL_CONTAINER_NAME="linux-shell-"
 
 # The NIC on the host that the container can connect to (primarily for X11)
 LINUX_SHELL_HOST_INTERFACE=${LINUX_SHELL_HOST_INTERFACE:-${DEFAULT_NIC}}
-
 
 # If the user did not supply a command to run, start the container with an interactive shell
 if [[ $# -le 0 ]]; then
@@ -26,12 +25,21 @@ else
     cmd="$*"
 fi
 
+# Get the host IP and name
 HOST_IP=$(/sbin/ifconfig ${LINUX_SHELL_HOST_INTERFACE} | /usr//bin/grep inet | /usr/bin/awk '$1=="inet" {print $2}')
-eval HOMEDIR="~"
 HOSTNAME=$(hostname -s)
 
 index=$(/usr/local/bin/docker ps --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | cut -d- -f3 | sort | tail -n1)
 (( index++ )) || true
+
+# Set up X11 options if X is running
+X11_OPTIONS=""
+if [[ -e /tmp/.X11-unix && -n ${HOST_IP} ]]; then
+    X11_OPTIONS="--env DISPLAY=${HOST_IP}:0 --volume /tmp/.X11-unix:/tmp/.X11-unix"
+fi
+
+# Find the volumes to mount into the container
+eval HOMEDIR="~"
 
 # Start the container.  To make it as seamless as possible:
 #   Run in privileged mode so the user has max power
@@ -47,13 +55,11 @@ exec /usr/local/bin/docker run \
     --env DOCKER_HOST_NAME=${HOSTNAME} \
     --env DOCKER_HOST_IP=${HOST_IP} \
     --env DOCKER_HOST_USER=${USER} \
-    --env DISPLAY=${HOST_IP}:0 \
+    ${X11_OPTIONS} \
     --volume ${HOMEDIR}:/root \
-    --volume /tmp/.X11-unix:/tmp/.X11-unix \
     --workdir /root \
-    --hostname ${LINUX_SHELL_CONTAINER_NAME}-${index} \
-    --name ${LINUX_SHELL_CONTAINER_NAME}-${index} \
+    --hostname ${LINUX_SHELL_CONTAINER_NAME}${index} \
+    --name ${LINUX_SHELL_CONTAINER_NAME}${index} \
     ${LINUX_SHELL_RUN_OPTIONS} \
     ${LINUX_SHELL_IMAGE_NAME} \
     ${cmd}
-

@@ -38,6 +38,10 @@ RUN apt-get update && \
     apt-get autoremove && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN pip install --upgrade \
+        awscli \
+        paramiko \
+        requests
 RUN (echo y;echo o conf prerequisites_policy follow;echo o conf commit) | cpan  && \
     ln -s /bin/tar /usr/bin/tar && \
     ln -s /bin/gzip /usr/bin/gzip && \

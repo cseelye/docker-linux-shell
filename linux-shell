@@ -8,13 +8,20 @@ DEFAULT_NIC="eth0"
 LINUX_SHELL_RUN_OPTIONS=${LINUX_SHELL_RUN_OPTIONS:-}
 
 # The base docker image to use for shells
-LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-linux-shell}
+LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-cseelye/linux-shell}
 
 # The name to give to shell container instances
 LINUX_SHELL_CONTAINER_NAME="linux-shell-"
 
 # The NIC on the host that the container can connect to (primarily for X11)
 LINUX_SHELL_HOST_INTERFACE=${LINUX_SHELL_HOST_INTERFACE:-${DEFAULT_NIC}}
+
+# Join an existing container or start a new one
+SHARED=0
+if [[ "${1:-}" == "--shared" ]]; then
+    SHARED=1
+    shift
+fi
 
 # If the user did not supply a command to run, start the container with an interactive shell
 if [[ $# -le 0 ]]; then
@@ -29,37 +36,79 @@ fi
 HOST_IP=$(/sbin/ifconfig ${LINUX_SHELL_HOST_INTERFACE} | /usr//bin/grep inet | /usr/bin/awk '$1=="inet" {print $2}')
 HOSTNAME=$(hostname -s)
 
-index=$(/usr/local/bin/docker ps --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | cut -d- -f3 | sort | tail -n1)
-(( index++ )) || true
 
 # Set up X11 options if X is running
-X11_OPTIONS=""
+X11_SOCKET=""
+X11_DISPLAY=""
 if [[ -e /tmp/.X11-unix && -n ${HOST_IP} ]]; then
-    X11_OPTIONS="--env DISPLAY=${HOST_IP}:0 --volume /tmp/.X11-unix:/tmp/.X11-unix"
+    X11_SOCKET="--volume /tmp/.X11-unix:/tmp/.X11-unix"
+    X11_DISPLAY="--env DISPLAY=${HOST_IP}:0"
 fi
 
 # Find the volumes to mount into the container
 eval HOMEDIR="~"
 
-# Start the container.  To make it as seamless as possible:
-#   Run in privileged mode so the user has max power
-#   Export DOCKER_HOST_USER, DOCKER_HOST_NAME and DOCKER_HOST_IP so that the container knows a little bit about its parent
-#   Mount the current user's home directory into the container so they get the same environment
-#   Mount the X11 socket and export DISPLAY so that GUI apps can run in the container
+if [[ ${SHARED} -eq 1 ]]; then
+    container_id=$(/usr/local/bin/docker container ls --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | awk '{print $1}' | tail -n1 || echo "")
+    # Start a new container if there is not one already running
+    if [[ -z ${container_id} ]]; then
+        # See if the container exists but is not started
+        container_id=$(/usr/local/bin/docker container ls --all --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | tail -n1 || echo "")
+        if [[ -n ${container_id} ]]; then
+            /usr/local/bin/docker container start ${container_id} &>/dev/null
+        else
+            container_id=$(/usr/local/bin/docker container run \
+                                --tty \
+                                --detach \
+                                ${X11_SOCKET} \
+                                --volume ${HOMEDIR}:/root \
+                                --workdir /root \
+                                --hostname ${LINUX_SHELL_CONTAINER_NAME}1 \
+                                --name ${LINUX_SHELL_CONTAINER_NAME}1 \
+                                ${LINUX_SHELL_RUN_OPTIONS} \
+                                ${LINUX_SHELL_IMAGE_NAME})
+        fi
+    fi
 
-exec /usr/local/bin/docker run \
-    --interactive \
-    --tty \
-    --privileged \
-    --rm \
-    --env DOCKER_HOST_NAME=${HOSTNAME} \
-    --env DOCKER_HOST_IP=${HOST_IP} \
-    --env DOCKER_HOST_USER=${USER} \
-    ${X11_OPTIONS} \
-    --volume ${HOMEDIR}:/root \
-    --workdir /root \
-    --hostname ${LINUX_SHELL_CONTAINER_NAME}${index} \
-    --name ${LINUX_SHELL_CONTAINER_NAME}${index} \
-    ${LINUX_SHELL_RUN_OPTIONS} \
-    ${LINUX_SHELL_IMAGE_NAME} \
-    ${cmd}
+    # Join the existing container
+    exec /usr/local/bin/docker container exec \
+            --tty \
+            --interactive \
+            --privileged \
+            --env DOCKER_HOST_NAME=${HOSTNAME} \
+            --env DOCKER_HOST_IP=${HOST_IP} \
+            --env DOCKER_HOST_USER=${USER} \
+            ${X11_DISPLAY} \
+            ${container_id} \
+            ${cmd}
+
+else
+  # Find any other running containers to give this one a unique name
+  index=$(/usr/local/bin/docker container ls --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | cut -d- -f3 | sort | tail -n1 || echo 0)
+  (( index++ )) || true
+
+  # Start the container.  To make it as seamless as possible:
+  #   Run in privileged mode so the user has max power
+  #   Export DOCKER_HOST_USER, DOCKER_HOST_NAME and DOCKER_HOST_IP so that the container knows a little bit about its parent
+  #   Mount the current user's home directory into the container so they get the same environment
+  #   Mount the X11 socket and export DISPLAY so that GUI apps can run in the container
+
+  exec /usr/local/bin/docker container run \
+      --interactive \
+      --tty \
+      --privileged \
+      --rm \
+      --env DOCKER_HOST_NAME=${HOSTNAME} \
+      --env DOCKER_HOST_IP=${HOST_IP} \
+      --env DOCKER_HOST_USER=${USER} \
+      ${X11_DISPLAY} \
+      ${X11_SOCKET} \
+      --volume ${HOMEDIR}:/root \
+      --volume /var/run/docker.sock:/var/run/docker.sock \
+      --workdir /root \
+      --hostname ${LINUX_SHELL_CONTAINER_NAME}${index} \
+      --name ${LINUX_SHELL_CONTAINER_NAME}${index} \
+      ${LINUX_SHELL_RUN_OPTIONS} \
+      ${LINUX_SHELL_IMAGE_NAME} \
+      ${cmd}
+fi

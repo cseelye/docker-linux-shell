@@ -29,6 +29,10 @@ RUN apt-get update && \
         sshpass \
         sysstat \
         vim \
+        virt-manager \
+        virt-top \
+        virt-viewer \
+        virt-what \
         wget && \
     apt-get autoremove && \
     apt-get clean && \
@@ -63,4 +67,19 @@ RUN apt-get update && \
     apt-get autoremove && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/.cpan/build/* /root/.cpan/rouces/authors/id
+# Docker binaries
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
+        apt-transport-https \
+        ca-certificates \
+        lsb-release \
+        software-properties-common && \
+    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes docker-ce && \
+    apt-get autoremove && \
+    apt-get clean && \
+    rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+CMD ["/bin/bash"]

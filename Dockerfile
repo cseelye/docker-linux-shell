@@ -28,6 +28,7 @@ RUN apt-get update && \
         rsync \
         sshpass \
         sysstat \
+        tree \
         vim \
         virt-manager \
         virt-top \

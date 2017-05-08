@@ -59,9 +59,15 @@ if [[ ${SHARED} -eq 1 ]]; then
         else
             container_id=$(/usr/local/bin/docker container run \
                                 --tty \
+                                --privileged \
                                 --detach \
+                                --env DOCKER_HOST_NAME=${HOSTNAME} \
+                                --env DOCKER_HOST_IP=${HOST_IP} \
+                                --env DOCKER_HOST_USER=${USER} \
+                                ${X11_DISPLAY} \
                                 ${X11_SOCKET} \
                                 --volume ${HOMEDIR}:/root \
+                                --volume /var/run/docker.sock:/var/run/docker.sock \
                                 --workdir /root \
                                 --hostname ${LINUX_SHELL_CONTAINER_NAME}1 \
                                 --name ${LINUX_SHELL_CONTAINER_NAME}1 \

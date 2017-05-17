@@ -79,7 +79,8 @@ RUN apt-get update && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes docker-ce && \
-    curl -L https://github.com/docker/compose/releases/download/1.13.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose && \
+    curl -L https://github.com/docker/compose/releases/download/$(curl https://api.github.com/repos/docker/compose/releases | jq -r '.[0].name')/docker-compose-$(uname -s)-$(uname -m) > /usr/local/bin/docker-compose && \
+    chmod +x /usr/local/bin/docker-compose && \
     apt-get autoremove && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*

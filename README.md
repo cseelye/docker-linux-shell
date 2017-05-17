@@ -13,8 +13,7 @@ The linux-shell script should be run on the host to launch a shell. The script w
 
 When run, the script will start a new container and launch an interactive shell in it. Or if the --shared arg is used with the script, the script will attempt to find an existing container and exec a new interactive shell in it, or launch a new container if one is not running.
 
-There are some environment variables that can tweak the script:
-LINUX_SHELL_CONTAINER_NAME can be set in your environment to control the name prefix of the containers that are launched
-LINUX_SHELL_RUN_OPTIONS can be set to add additional options to the docker run command
-LINUX_SHELL_HOST_INTERFACE can be set to override the host NIC used for X11 forwarding between the container and host
-
+There are some environment variables that can tweak the script behavior:
+* ```LINUX_SHELL_CONTAINER_NAME``` can be set to override the name prefix of the containers that are launched
+* ```LINUX_SHELL_RUN_OPTIONS``` can be set to add additional options to the docker run command
+* ```LINUX_SHELL_HOST_INTERFACE``` can be set to override the host NIC used for X11 forwarding between the container and host

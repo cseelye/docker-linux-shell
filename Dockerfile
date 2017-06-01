@@ -41,8 +41,8 @@ RUN apt-get update && \
 # Setup locale
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install locales && \
-    local-gen en_US && \
-    local-gen en_US.UTF-8 && \
+    locale-gen en_US && \
+    locale-gen en_US.UTF-8 && \
     localedef -i en_US -c -f UTF-8 en_US.UTF-8 && \
     update-locale && \
     apt-get autoremove && \
@@ -65,6 +65,8 @@ RUN apt-get update && \
         python3-dev && \
     curl https://bootstrap.pypa.io/get-pip.py | python3 && \
     curl https://bootstrap.pypa.io/get-pip.py | python2 && \
+    pip2 install --upgrade six && \
+    pip3 install --upgrade six && \
     pip2 install --upgrade $python_modules && \
     pip3 install --upgrade $python_modules && \
     apt-get autoremove && \

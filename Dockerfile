@@ -38,6 +38,22 @@ RUN apt-get update && \
     apt-get autoremove && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Setup locale
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install locales && \
+    local-gen en_US && \
+    local-gen en_US.UTF-8 && \
+    localedef -i en_US -c -f UTF-8 en_US.UTF-8 && \
+    update-locale && \
+    apt-get autoremove && \
+    apt-get clean && \
+    rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# kdiff3 - put into its own layer because it is so huge
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install kdiff3 && \
+    apt-get autoremove && \
+    apt-get clean && \
+    rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Python stuff
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install \

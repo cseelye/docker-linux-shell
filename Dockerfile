@@ -5,7 +5,7 @@ ENV TERM=xterm-256color
 ARG python_modules="awscli paramiko requests"
 
 RUN apt-get update && \
-    apt-get --assume-yes dist-upgrade && \
+    DEBIAN_FRONTEND=noninteractive apt-get --assume-yes dist-upgrade && \
     DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
         aptitude \
         build-essential \
@@ -35,7 +35,7 @@ RUN apt-get update && \
         virt-viewer \
         virt-what \
         wget && \
-    apt-get autoremove && \
+    apt-get autoremove --assume-yes && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Setup locale
@@ -45,13 +45,13 @@ RUN apt-get update && \
     locale-gen en_US.UTF-8 && \
     localedef -i en_US -c -f UTF-8 en_US.UTF-8 && \
     update-locale && \
-    apt-get autoremove && \
+    apt-get autoremove --assume-yes && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # kdiff3 - put into its own layer because it is so huge
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install kdiff3 && \
-    apt-get autoremove && \
+    apt-get autoremove --assume-yes && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Python stuff
@@ -69,7 +69,7 @@ RUN apt-get update && \
     pip3 install --upgrade six && \
     pip2 install --upgrade $python_modules && \
     pip3 install --upgrade $python_modules && \
-    apt-get autoremove && \
+    apt-get autoremove --assume-yes && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # ClusterSSH and perl stuff
@@ -83,7 +83,7 @@ RUN apt-get update && \
     ln -s /bin/tar /usr/bin/tar && \
     ln -s /bin/gzip /usr/bin/gzip && \
     cpan -f install CPAN::WAIT CPAN::Changes Exception::Class Readonly Test::DistManifest Test::PerlTidy Test::Pod::Coverage Tk App::ClusterSSH && \
-    apt-get autoremove && \
+    apt-get autoremove --assume-yes && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/.cpan/build/* /root/.cpan/rouces/authors/id
 # Docker binaries
@@ -99,7 +99,7 @@ RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes docker-ce && \
     curl -L https://github.com/docker/compose/releases/download/$(curl https://api.github.com/repos/docker/compose/releases | jq -r '.[0].name')/docker-compose-$(uname -s)-$(uname -m) > /usr/local/bin/docker-compose && \
     chmod +x /usr/local/bin/docker-compose && \
-    apt-get autoremove && \
+    apt-get autoremove --assume-yes && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

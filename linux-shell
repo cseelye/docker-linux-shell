@@ -1,9 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-DEFAULT_NIC="eth0"
-[[ $(uname) == "Darwin" ]] && DEFAULT_NIC="en0"
-
 # Additional options to the docker run command - https://docs.docker.com/engine/reference/commandline/run/
 LINUX_SHELL_RUN_OPTIONS=${LINUX_SHELL_RUN_OPTIONS:-}
 
@@ -13,8 +10,6 @@ LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-cseelye/linux-shell}
 # The name to give to shell container instances
 LINUX_SHELL_CONTAINER_NAME="linux-shell-"
 
-# The NIC on the host that the container can connect to (primarily for X11)
-LINUX_SHELL_HOST_INTERFACE=${LINUX_SHELL_HOST_INTERFACE:-${DEFAULT_NIC}}
 
 # Join an existing container or start a new one
 SHARED=0
@@ -32,10 +27,20 @@ else
     cmd="$*"
 fi
 
-# Get the host IP and name
-HOST_IP=$(/sbin/ifconfig ${LINUX_SHELL_HOST_INTERFACE} | /usr//bin/grep inet | /usr/bin/awk '$1=="inet" {print $2}')
+# Get the host name and IP
 HOSTNAME=$(hostname -s)
 
+if [[ $(uname) == "Darwin" ]]; then
+    for service in $(networksetup -listnetworkserviceorder | grep -P '\(\d\)' | cut -d' ' -f2-); do 
+        HOST_IP=$(networksetup -getinfo "${service}" | grep "^IP address" | cut -d' ' -f3)
+        [[ -n ${HOST_IP} ]] && break
+    done
+else
+    for nicpath in /sys/class/net/*; do 
+        [[ ! -e ${nicpath}/device ]] && continue
+        HOST_IP=$(/sbin/ifconfig $(basename ${nicpath}) | /usr/bin/grep inet | /usr/bin/awk '$1=="inet" {print $2}')
+    done
+fi
 
 # Set up X11 options if X is running
 X11_SOCKET=""

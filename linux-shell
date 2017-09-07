@@ -31,12 +31,12 @@ fi
 HOSTNAME=$(hostname -s)
 
 if [[ $(uname) == "Darwin" ]]; then
-    for service in $(networksetup -listnetworkserviceorder | grep -P '\(\d\)' | cut -d' ' -f2-); do 
+    for service in $(networksetup -listnetworkserviceorder | grep -P '\(\d\)' | cut -d' ' -f2-); do
         HOST_IP=$(networksetup -getinfo "${service}" | grep "^IP address" | cut -d' ' -f3)
         [[ -n ${HOST_IP} ]] && break
     done
 else
-    for nicpath in /sys/class/net/*; do 
+    for nicpath in /sys/class/net/*; do
         [[ ! -e ${nicpath}/device ]] && continue
         HOST_IP=$(/sbin/ifconfig $(basename ${nicpath}) | /usr/bin/grep inet | /usr/bin/awk '$1=="inet" {print $2}')
     done

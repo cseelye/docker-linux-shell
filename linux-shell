@@ -11,6 +11,8 @@ LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-cseelye/linux-shell}
 LINUX_SHELL_CONTAINER_NAME="linux-shell-"
 
 
+ORIGINAL_IFS=${IFS}
+
 # Join an existing container or start a new one
 SHARED=0
 if [[ "${1:-}" == "--shared" ]]; then
@@ -31,10 +33,12 @@ fi
 HOSTNAME=$(hostname -s)
 
 if [[ $(uname) == "Darwin" ]]; then
-    for service in $(networksetup -listnetworkserviceorder | grep -P '\(\d\)' | cut -d' ' -f2-); do
-        HOST_IP=$(networksetup -getinfo "${service}" | grep "^IP address" | cut -d' ' -f3)
+    IFS=$'\n'
+    for service in $(/usr/sbin/networksetup -listnetworkserviceorder | grep '([0123456789])' | cut -d' ' -f2-); do
+        HOST_IP=$(/usr/sbin/networksetup -getinfo "${service}" | grep "^IP address" | cut -d' ' -f3 || true)
         [[ -n ${HOST_IP} ]] && break
     done
+    IFS=${ORIGINAL_IFS}
 else
     for nicpath in /sys/class/net/*; do
         [[ ! -e ${nicpath}/device ]] && continue
@@ -94,8 +98,8 @@ if [[ ${SHARED} -eq 1 ]]; then
             ${cmd}
 
 else
-  # Find any other running containers to give this one a unique name
-  index=$(/usr/local/bin/docker container ls --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | cut -d- -f3 | sort | tail -n1 || echo 0)
+  # Find any other existing containers to give this one a unique name
+  index=$(/usr/local/bin/docker container ls --all --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | cut -d- -f3 | sort | tail -n1 || echo 0)
   (( index++ )) || true
 
   # Start the container.  To make it as seamless as possible:

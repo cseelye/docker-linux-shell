@@ -1,13 +1,14 @@
 FROM ubuntu:16.04
 LABEL maintainer="cseelye@gmail.com"
 
-ENV TERM=xterm-256color
+ENV TERM=xterm-color
 ARG python_modules="awscli paramiko requests"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --assume-yes dist-upgrade && \
     DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
         aptitude \
+        ack-grep \
         build-essential \
         curl \
         git \

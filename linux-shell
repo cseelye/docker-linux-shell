@@ -10,6 +10,14 @@ LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-cseelye/linux-shell}
 # The name to give to shell container instances
 LINUX_SHELL_CONTAINER_NAME="linux-shell-"
 
+DOCKER_BINARY=${DOCKER_BINARY-}
+[[ -z ${DOCKER_BINARY} ]] && { DOCKER_BINARY=$(which docker || true);
+    [[ -z ${DOCKER_BINARY} ]] && { DOCKER_BINARY=/usr/local/bin/docker;
+        [[ -e ${DOCKER_BINARY} ]] || { DOCKER_BINARY=/usr/bin/docker;
+            [[ -e ${DOCKER_BINARY} ]] || { echo "Could not find a docker binary"; exit 1; }
+        }
+    }
+}
 
 ORIGINAL_IFS=${IFS}
 
@@ -58,15 +66,15 @@ fi
 eval HOMEDIR="~"
 
 if [[ ${SHARED} -eq 1 ]]; then
-    container_id=$(/usr/local/bin/docker container ls --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | awk '{print $1}' | tail -n1 || echo "")
+    container_id=$("${DOCKER_BINARY}" container ls --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | awk '{print $1}' | tail -n1 || echo "")
     # Start a new container if there is not one already running
     if [[ -z ${container_id} ]]; then
         # See if the container exists but is not started
-        container_id=$(/usr/local/bin/docker container ls --all --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | tail -n1 || echo "")
+        container_id=$("${DOCKER_BINARY}" container ls --all --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | tail -n1 || echo "")
         if [[ -n ${container_id} ]]; then
-            /usr/local/bin/docker container start ${container_id} &>/dev/null
+            "${DOCKER_BINARY}" container start ${container_id} &>/dev/null
         else
-            container_id=$(/usr/local/bin/docker container run \
+            container_id=$("${DOCKER_BINARY}" container run \
                                 --tty \
                                 --privileged \
                                 --detach \
@@ -86,7 +94,7 @@ if [[ ${SHARED} -eq 1 ]]; then
     fi
 
     # Join the existing container
-    exec /usr/local/bin/docker container exec \
+    exec "${DOCKER_BINARY}" container exec \
             --tty \
             --interactive \
             --privileged \
@@ -99,7 +107,7 @@ if [[ ${SHARED} -eq 1 ]]; then
 
 else
   # Find any other existing containers to give this one a unique name
-  index=$(/usr/local/bin/docker container ls --all --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | cut -d- -f3 | sort | tail -n1 || echo 0)
+  index=$("${DOCKER_BINARY}" container ls --all --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | cut -d- -f3 | sort | tail -n1 || echo 0)
   (( index++ )) || true
 
   # Start the container.  To make it as seamless as possible:
@@ -108,7 +116,7 @@ else
   #   Mount the current user's home directory into the container so they get the same environment
   #   Mount the X11 socket and export DISPLAY so that GUI apps can run in the container
 
-  exec /usr/local/bin/docker container run \
+  exec "${DOCKER_BINARY}" container run \
       --interactive \
       --tty \
       --privileged \

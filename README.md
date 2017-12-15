@@ -5,10 +5,12 @@ Docker Hub: https://hub.docker.com/r/cseelye/linux-shell/
 
 Github: https://github.com/cseelye/docker-linux-shell
 
+There is also a no-X11 version (same name with -nox on the end)
+
 ## Features
 * Ubuntu 16.04 based shell with all of the standard GNU command line tools you expect (awk, sed, cut, etc.)
 * Variety of tools such as build tools, SSH client, curl, wget, ping, taceroute, jq, ipmitool, vim, tar, pigz, etc.
-* X11 support, so you can run GUI apps
+* X11 support, so you can run GUI apps (or use the -nox version if you don't want this)
 * Docker client binaries, so you can control other containers (docker, docker-compose)
 * Virt management tools (libvirt, virt-manager, virt-top, etc.)
 

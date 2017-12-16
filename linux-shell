@@ -10,7 +10,25 @@ LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-cseelye/linux-shell}
 # The name to give to shell container instances
 LINUX_SHELL_CONTAINER_NAME="linux-shell-"
 
+# Path to an explicit docker binary. Leave blank to auto-discover
 DOCKER_BINARY=${DOCKER_BINARY-}
+
+
+
+# Parse command line options
+SHARED=0
+while getopts ":srp" opt; do
+    case ${opt} in
+        s)
+            SHARED=1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+# Make sure we are not inside a container already
+[[ -e /proc/1 ]] && grep -q 'cpu:/docker/' /proc/1/cgroup && { echo "Cannot start a container inside another container"; exit 1; }
+
+# Find the docker binary
 [[ -z ${DOCKER_BINARY} ]] && { DOCKER_BINARY=$(which docker || true);
     [[ -z ${DOCKER_BINARY} ]] && { DOCKER_BINARY=/usr/local/bin/docker;
         [[ -e ${DOCKER_BINARY} ]] || { DOCKER_BINARY=/usr/bin/docker;
@@ -18,15 +36,6 @@ DOCKER_BINARY=${DOCKER_BINARY-}
         }
     }
 }
-
-ORIGINAL_IFS=${IFS}
-
-# Join an existing container or start a new one
-SHARED=0
-if [[ "${1:-}" == "--shared" ]]; then
-    SHARED=1
-    shift
-fi
 
 # If the user did not supply a command to run, start the container with an interactive shell
 if [[ $# -le 0 ]]; then
@@ -39,8 +48,8 @@ fi
 
 # Get the host name and IP
 HOSTNAME=$(hostname -s)
-
 if [[ $(uname) == "Darwin" ]]; then
+    ORIGINAL_IFS=${IFS}
     IFS=$'\n'
     for service in $(/usr/sbin/networksetup -listnetworkserviceorder | grep '([0123456789])' | cut -d' ' -f2-); do
         HOST_IP=$(/usr/sbin/networksetup -getinfo "${service}" | grep "^IP address" | cut -d' ' -f3 || true)
@@ -57,7 +66,7 @@ fi
 # Set up X11 options if X is running
 X11_SOCKET=""
 X11_DISPLAY=""
-if [[ -e /tmp/.X11-unix && -n ${HOST_IP} ]]; then
+if [[ -e /tmp/.X11-unix && -n ${HOST_IP-} ]]; then
     X11_SOCKET="--volume /tmp/.X11-unix:/tmp/.X11-unix"
     X11_DISPLAY="--env DISPLAY=${HOST_IP}:0"
 fi
@@ -122,8 +131,8 @@ else
       --privileged \
       --rm \
       --env DOCKER_HOST_NAME=${HOSTNAME} \
-      --env DOCKER_HOST_IP=${HOST_IP} \
-      --env DOCKER_HOST_USER=${USER} \
+      --env DOCKER_HOST_IP=${HOST_IP-} \
+      --env DOCKER_HOST_USER=${USER-} \
       ${X11_DISPLAY} \
       ${X11_SOCKET} \
       --volume ${HOMEDIR}:/root \

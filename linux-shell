@@ -17,10 +17,13 @@ DOCKER_BINARY=${DOCKER_BINARY-}
 
 # Parse command line options
 SHARED=0
+PULL=0
 while getopts ":srp" opt; do
     case ${opt} in
         s)
             SHARED=1 ;;
+        p)
+            PULL=1 ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -36,6 +39,15 @@ shift $((OPTIND - 1))
         }
     }
 }
+
+# Pull the latest if requested
+if [[ ${PULL} -eq 1 ]]; then
+    echo "Updating docker image, this may take a minute..."
+    tmpfile=$(mktemp -t docker-pullXXXX)
+    if ! ${DOCKER_BINARY} pull ${LINUX_SHELL_IMAGE_NAME} 2>&1 > ${tmpfile}; then
+        cat ${tmpfile}
+    fi
+fi
 
 # If the user did not supply a command to run, start the container with an interactive shell
 if [[ $# -le 0 ]]; then

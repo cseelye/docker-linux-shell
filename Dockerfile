@@ -1,8 +1,18 @@
 FROM ubuntu:16.04
-LABEL maintainer="cseelye@gmail.com"
+
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+ARG VERSION=0.0
+LABEL maintainer="cseelye@gmail.com" \
+      url="https://github.com/cseelye/docker-linux-shell" \
+      name="docker-linux-shell" \
+      description="Interactive linux shell" \
+      vcs-ref=$VCS_REF \
+      build-date=$BUILD_DATE \
+      version=$VERSION
 
 ENV TERM=xterm-color
-ARG python_modules="awscli paramiko requests"
+ARG python_modules="awscli paramiko requests future six"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --assume-yes dist-upgrade && \
@@ -31,6 +41,8 @@ RUN apt-get update && \
         sysstat \
         tree \
         vim \
+        virt-top \
+        virt-what \
         wget && \
     apt-get autoremove --assume-yes && \
     apt-get clean && \

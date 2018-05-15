@@ -2,33 +2,44 @@ sudo: required
 services:
     - docker
 env:
-    matrix:
-        - REPO_NAME=cseelye
-          IMAGE_NAME=linux-shell
-          IMAGE_TAG=full
-          DOCKERFILE_PATH=Dockerfile
-        - REPO_NAME=cseelye
-          IMAGE_NAME=linux-shell
-          IMAGE_TAG=latest
-          DOCKERFILE_PATH=Dockerfile
-        - REPO_NAME=cseelye
-          IMAGE_NAME=linux-shell
-          IMAGE_TAG=nox
-          DOCKERFILE_PATH=Dockerfile-nox
     global:
+        - IMAGE_BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        - IMAGE_VERSION="$(cat .container-version).$TRAVIS_BUILD_NUMBER"
+        - IMAGE_VCS_REF=$(git rev-parse --short HEAD)
         - secure: l9j/rzFcUjDg7C8zNbLzyuSA4u4xXmF6Sxa4hsXBzC5aSdWM4oXje+aLxx85Nv9bPJLExkrWSJ2MPpukGdVPR/o7wIBKXa7QwtCH+RpDM3M0387IVnSexa2hRPe7f7abrqGRg+hG+sfYoLiM7RIB6tZ3pcNSGAetytLoBhFLBcgEU2iH607J88xO99U5E/upoHN0tOFEewnDzxAoOZ8/JlHhU5XVIn5OWxts1+zmy9+6rcwbxH2RYUdOe+zqEd1jZQxjyRi8tFuOYe63j1NBrunf3ubfbp3FW5Ing6C8aS2lIR9QlAl8c1+qjDMvFJKARbxJAowO72D11Fkfj0vb/smMjWKRmRzQhFFIDbYvuS0d4+a6nvOh2CS7COnnfwfJNb7LzeKy7sQg7yIioPbaF/JqPIN+1pN2GIqSJE5yFykisFpxGj38P3S6CczZu8q8ddrox8uNEpcKAT7gMIM8osPA0bmfg7MWSSXZUq/wx1O+iDkh7JIQQSgpsZWu3KbRO77SEwRccDxYEEE0zFrpNOYXblkvRgMyrOpB2yHW2EQiYuawXLfyopP88WNQQohXOuoxSmQDzRTXaiEMXrOn+b9PUVrqlaGFzNDOaCGnhpFFsIc9hU2HKY6xVnckSZCAd4JEhv6hMMeyjDp/V4iLs7dZAIFjywnwzuAGOnGmNx0=
         - secure: OjjGgrVcjO+O5jp/ai/vBQ8lsoD3J8TzX3UvP4yAIwgyzzu3iAR2JNHwV1Ats17jzT1HY3RHIP7tZvgZpBU2TVyKbFZd35bZGjzyS2RdNjpemZ4uEUohZUMX9cxqXir31m/mwGaSoarQgFQhkx9K4FYjvfYHC0YDEvDMHHKWFTLBfWSp8EZcz6OrbpDxV0jWzpdlEFaEX5tnCV+jco7UJ5ipWYVDJoR5cNVQdLzUESK3yaPBmWwwZwm4nzGdHgedjUasL9cWYPKnPsT1qp6Urc1ty8e7fJ/eLiWcSv8cKyjH1SxD+jWugduSW2VYnUGzdvNO64h/zF0/n4EJ8qviWLxdVjcBwGhrAOf4STqrPu+/9QIJQpG3dLn/8Z7IDwbwWzQFJ+TniGscRP7A8hi7yvQaYXM3OMw8BR0hjJP+uj8jaQj12wsu+9OHWNVjPhnxES6KAFY9wDJhY17HObSsi+oCWOkbxw2JPZ0QIJS4XbuFZwxonEWugsE7lpzjYhsECCqlzYlmxizq3elb+/4udLh5E4hs46C1n/K+7w6woiQiEjRXRzbeHV/3Ayycc6+gD00ZuCdoi1tCOt7hT2ExMV5LiTXW33PQ3BLe66L7TnC1u2MwHPuaAlUjkIvbLT0phxvbq7uNW6X58fA1JVe4UkS2/FCB+pZXOjPiUHZ4e9w=
-before_script:
-    - docker pull $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG || true
-script:
-    - docker build --build-arg VCS_REF=$(git rev-parse --short HEAD) --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") --build-arg VERSION=$(cat .container-version)  --cache-from $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --tag $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --file $DOCKERFILE_PATH .
-after_script:
-    - docker image ls
-before_deploy:
-    - docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_PASSWORD"
-deploy:
-    provider: script
-    script: docker push $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG
-    on:
-        branch: master
 
+jobs:
+    include:
+        - stage: build standard container
+          env:
+              - REPO_NAME=cseelye
+              - IMAGE_NAME=linux-shell
+              - IMAGE_TAG=latest
+              - DOCKERFILE_NAME=Dockerfile
+          before_script: docker pull $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG || true
+          script: docker build --build-arg VCS_REF=$IMAGE_VCS_REF --build-arg BUILD_DATE=$IMAGE_BUILD_DATE --build-arg VERSION=$IMAGE_VERSION  --cache-from $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --tag $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --file $DOCKERFILE_NAME .
+          before_deploy: docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_PASSWORD"
+          deploy:
+            provider: script
+            script: docker push $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG
+            on:
+                all_branches: true
+        - stage: build x11 container
+          env:
+              - REPO_NAME=cseelye
+              - IMAGE_NAME=linux-shell
+              - IMAGE_TAG=x11
+              - DOCKERFILE_NAME=Dockerfile-x11
+          before_script: docker pull $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG || true
+          script: docker build --build-arg VCS_REF=$IMAGE_VCS_REF --build-arg BUILD_DATE=$IMAGE_BUILD_DATE --build-arg VERSION=$IMAGE_VERSION  --cache-from $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --tag $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --file $DOCKERFILE_NAME .
+          before_deploy: docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_PASSWORD"
+          deploy:
+            provider: script
+            script: docker push $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG
+            on:
+                all_branches: true
+
+stages:
+    - build standard container
+    - build x11 container

@@ -65,6 +65,9 @@ RUN apt-get update && \
         python-dev \
         python3 \
         python3-dev && \
+    DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install \
+        python-libvirt \
+        python3-libvirt && \
     curl https://bootstrap.pypa.io/get-pip.py | python3 && \
     curl https://bootstrap.pypa.io/get-pip.py | python2 && \
     pip3 install --upgrade six && \

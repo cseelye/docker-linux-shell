@@ -1,4 +1,4 @@
-FROM cseelye/linux-shell:latest
+FROM cseelye/linux-shell:xenial
 
 ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown

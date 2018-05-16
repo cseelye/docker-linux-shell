@@ -5,7 +5,7 @@ set -euo pipefail
 LINUX_SHELL_RUN_OPTIONS=${LINUX_SHELL_RUN_OPTIONS:-}
 
 # The base docker image to use for shells
-LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-cseelye/linux-shell}
+LINUX_SHELL_IMAGE_NAME=${LINUX_SHELL_IMAGE_NAME:-cseelye/linux-shell:xenial}
 
 # The name to give to shell container instances
 LINUX_SHELL_CONTAINER_NAME="linux-shell-"

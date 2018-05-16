@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown
@@ -12,7 +12,6 @@ LABEL maintainer="cseelye@gmail.com" \
       version=$VERSION
 
 ENV TERM=xterm-color
-ARG python_modules="awscli paramiko requests future six"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --assume-yes dist-upgrade && \
@@ -62,16 +61,28 @@ RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install \
         libffi-dev \
         libssl-dev \
-        python2.7 \
-        python2.7-dev \
+        python \
+        python-dev \
         python3 \
         python3-dev && \
     curl https://bootstrap.pypa.io/get-pip.py | python3 && \
     curl https://bootstrap.pypa.io/get-pip.py | python2 && \
-    pip2 install --upgrade six && \
     pip3 install --upgrade six && \
-    pip2 install --upgrade $python_modules && \
-    pip3 install --upgrade $python_modules && \
+    pip3 install --upgrade awscli paramiko requests future pylint && \
+    pip2 install --upgrade six && \
+    pip2 install --upgrade awscli paramiko requests future pylint && \
+    curl https://raw.githubusercontent.com/cseelye/pylinter/master/pylint2 -o /usr/local/bin/pylint2 && \
+    curl https://raw.githubusercontent.com/cseelye/pylinter/master/pylint3 -o /usr/local/bin/pylint3 && \
+    chmod +x /usr/local/bin/pylint* && \
+    apt-get autoremove --assume-yes && \
+    apt-get clean && \
+    rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Ruby and travis-ci
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install \
+        ruby \
+        ruby-dev && \
+    gem install travis && \
     apt-get autoremove --assume-yes && \
     apt-get clean && \
     rm --force --recursive /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -82,7 +93,7 @@ RUN apt-get update && \
         ca-certificates \
         lsb-release \
         software-properties-common && \
-    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
+    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) edge" > /etc/apt/sources.list.d/docker.list && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes docker-ce && \

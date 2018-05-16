@@ -1,18 +1,16 @@
-# docker-linux-shell
-Docker container for an interactive linux shell
+# docker-linux-shell [![Build Status](https://travis-ci.org/cseelye/docker-linux-shell.svg?branch=master)](https://travis-ci.org/cseelye/docker-linux-shell)
+Docker container for an interactive linux shell. I use this to have a standard command line environment that I can 
+run an any host I am using.
 
-Docker Hub: https://hub.docker.com/r/cseelye/linux-shell/
-
+Docker Hub: https://hub.docker.com/r/cseelye/linux-shell/  
 Github: https://github.com/cseelye/docker-linux-shell
-
-There is also a no-X11 version (same name with -nox on the end)
 
 ## Features
 * Ubuntu 16.04 based shell with all of the standard GNU command line tools you expect (awk, sed, cut, etc.)
-* Variety of tools such as build tools, SSH client, curl, wget, ping, taceroute, jq, ipmitool, vim, tar, pigz, etc.
-* X11 support, so you can run GUI apps (or use the -nox version if you don't want this)
+* Variety of tools such as build tools, SSH client, curl, wget, ping, traceroute, jq, ipmitool, vim, tar, pigz, etc.
 * Docker client binaries, so you can control other containers (docker, docker-compose)
-* Virt management tools (libvirt, virt-manager, virt-top, etc.)
+* Virt management tools (libvirt, virsh, virt-top, etc.)
+* Optional X11 support, so you can run GUI apps (use the `:x11` tag if you want this)
 
 ## Usage
 The linux-shell script should be run on the host to launch a shell. The script will automatically mount the X11 and docker sockets, so those features work, as well as mount your home directory into the container.

@@ -15,7 +15,7 @@ jobs:
           env:
               - REPO_NAME=cseelye
               - IMAGE_NAME=linux-shell
-              - IMAGE_TAG=latest
+              - IMAGE_TAG=xenial
               - DOCKERFILE_NAME=Dockerfile
           before_script: docker pull $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG || true
           script: docker build --build-arg VCS_REF=$IMAGE_VCS_REF --build-arg BUILD_DATE=$IMAGE_BUILD_DATE --build-arg VERSION=$IMAGE_VERSION  --cache-from $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --tag $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --file $DOCKERFILE_NAME .
@@ -24,12 +24,12 @@ jobs:
             provider: script
             script: docker push $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG
             on:
-                all_branches: true
+                branch: xenial
         - stage: build x11 container
           env:
               - REPO_NAME=cseelye
               - IMAGE_NAME=linux-shell
-              - IMAGE_TAG=x11
+              - IMAGE_TAG=xenial-x11
               - DOCKERFILE_NAME=Dockerfile-x11
           before_script: docker pull $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG || true
           script: docker build --build-arg VCS_REF=$IMAGE_VCS_REF --build-arg BUILD_DATE=$IMAGE_BUILD_DATE --build-arg VERSION=$IMAGE_VERSION  --cache-from $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --tag $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG --file $DOCKERFILE_NAME .
@@ -38,7 +38,7 @@ jobs:
             provider: script
             script: docker push $REPO_NAME/$IMAGE_NAME:$IMAGE_TAG
             on:
-                all_branches: true
+                branch: xenial
 
 stages:
     - build standard container

@@ -84,7 +84,11 @@ if [[ -e /tmp/.X11-unix && -n ${HOST_IP-} ]]; then
 fi
 
 # Find the volumes to mount into the container
+OTHER_VOLUMES=""
 eval HOMEDIR="~"
+if [[ $(uname) == "Darwin" ]]; then
+    OTHER_VOLUMES="--volume /Volumes:/Volumes"
+fi
 
 if [[ ${SHARED} -eq 1 ]]; then
     container_id=$("${DOCKER_BINARY}" container ls --format '{{.Names}}' | grep ${LINUX_SHELL_CONTAINER_NAME} | awk '{print $1}' | tail -n1 || echo "")
@@ -106,6 +110,7 @@ if [[ ${SHARED} -eq 1 ]]; then
                                 ${X11_SOCKET} \
                                 --volume ${HOMEDIR}:/root \
                                 --volume /var/run/docker.sock:/var/run/docker.sock \
+                                ${OTHER_VOLUMES} \
                                 --workdir /root \
                                 --hostname ${LINUX_SHELL_CONTAINER_NAME}1 \
                                 --name ${LINUX_SHELL_CONTAINER_NAME}1 \
@@ -149,6 +154,7 @@ else
       ${X11_SOCKET} \
       --volume ${HOMEDIR}:/root \
       --volume /var/run/docker.sock:/var/run/docker.sock \
+      ${OTHER_VOLUMES} \
       --workdir /root \
       --hostname ${LINUX_SHELL_CONTAINER_NAME}${index} \
       --name ${LINUX_SHELL_CONTAINER_NAME}${index} \
